@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: tongli-pm-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./tongli_pm.db
+      - key: ANOMALY_THRESHOLD_KM
+        value: "3000"
+      - key: MIN_DATA_POINTS
+        value: "5"
