@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "main.py": {
+      "runtime": "python3.12",
+      "excludeFiles": "{*.pyc,__pycache__/**,*.db,ml/saved_models/**}"
+    }
+  }
+}
