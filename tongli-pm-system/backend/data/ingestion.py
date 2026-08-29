@@ -92,16 +92,23 @@ def load_csv(content: bytes) -> pd.DataFrame:
 
 def load_excel(content: bytes) -> pd.DataFrame:
     # Try each sheet; pick the one with the most truck rows
+def load_excel(content: bytes) -> pd.DataFrame:
     xf = pd.ExcelFile(io.BytesIO(content))
     best = None
     best_count = 0
     for sheet in xf.sheet_names:
         try:
-            raw = pd.read_excel(io.BytesIO(content), sheet_name=sheet)
-            norm = normalise(raw, source="excel")
-            if len(norm) > best_count:
-                best = norm
-                best_count = len(norm)
+            # Try header at row 0 first, then row 3 (your template has title rows)
+            for header_row in [0, 1, 2, 3, 4]:
+                raw = pd.read_excel(
+                    io.BytesIO(content),
+                    sheet_name=sheet,
+                    header=header_row
+                )
+                norm = normalise(raw, source="excel")
+                if len(norm) > best_count:
+                    best = norm
+                    best_count = len(norm)
         except Exception:
             continue
     if best is None or best_count == 0:
