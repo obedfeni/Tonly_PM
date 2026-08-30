@@ -2,34 +2,36 @@
 Tongli EV Fleet PM Prediction System — FastAPI Backend
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import uvicorn
 import logging
-
-from api.routes import trucks, predictions, data_ingestion, model_performance, anomalies, settings
-from core.config import settings as app_settings
-from core.database import init_db
+import traceback
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Tongli EV Fleet PM Prediction API",
-    description="AI-powered predictive maintenance for EV mining trucks",
     version="1.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
 
-# ── CORS — allow all origins ──────────────────────────────────────────────────
+# ── CORS — must be added FIRST before any routes ──────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+
+# ── Routes — imported after middleware ────────────────────────────────────────
+from api.routes import trucks, predictions, data_ingestion, model_performance, anomalies, settings
 
 app.include_router(trucks.router,            prefix="/api/trucks",            tags=["Trucks"])
 app.include_router(predictions.router,       prefix="/api/predictions",       tags=["Predictions"])
@@ -41,9 +43,26 @@ app.include_router(settings.router,          prefix="/api/settings",          ta
 
 @app.on_event("startup")
 async def startup():
-    logger.info("Initialising database...")
-    await init_db()
-    logger.info("Tongli PM Prediction System ready.")
+    try:
+        from core.database import init_db
+        await init_db()
+        logger.info("Database initialised.")
+    except Exception as e:
+        logger.error(f"Database init error (non-fatal): {e}")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled error: {traceback.format_exc()}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
 
 
 @app.get("/")
@@ -53,11 +72,7 @@ async def root():
 
 @app.get("/api/health")
 async def health():
-    return {
-        "status": "ok",
-        "service": "Tongli PM Prediction API",
-        "version": "1.0.0"
-    }
+    return {"status": "ok", "service": "Tongli PM Prediction API", "version": "1.0.0"}
 
 
 if __name__ == "__main__":
