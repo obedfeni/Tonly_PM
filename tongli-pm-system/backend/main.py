@@ -1,11 +1,9 @@
 """
 Tongli EV Fleet PM Prediction System — FastAPI Backend
-Author: AI/ML Engineering
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 import uvicorn
 import logging
 
@@ -18,26 +16,27 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Tongli EV Fleet PM Prediction API",
-    description="AI-powered predictive maintenance system for EV mining trucks",
+    description="AI-powered predictive maintenance for EV mining trucks",
     version="1.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
 
+# ── CORS — allow all origins ──────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(trucks.router,           prefix="/api/trucks",            tags=["Trucks"])
-app.include_router(predictions.router,      prefix="/api/predictions",       tags=["Predictions"])
-app.include_router(data_ingestion.router,   prefix="/api/data",              tags=["Data Ingestion"])
-app.include_router(model_performance.router,prefix="/api/model-performance", tags=["ML Performance"])
-app.include_router(anomalies.router,        prefix="/api/anomalies",         tags=["Anomalies"])
-app.include_router(settings.router,         prefix="/api/settings",          tags=["Settings"])
+app.include_router(trucks.router,            prefix="/api/trucks",            tags=["Trucks"])
+app.include_router(predictions.router,       prefix="/api/predictions",       tags=["Predictions"])
+app.include_router(data_ingestion.router,    prefix="/api/data",              tags=["Data Ingestion"])
+app.include_router(model_performance.router, prefix="/api/model-performance", tags=["ML Performance"])
+app.include_router(anomalies.router,         prefix="/api/anomalies",         tags=["Anomalies"])
+app.include_router(settings.router,          prefix="/api/settings",          tags=["Settings"])
 
 
 @app.on_event("startup")
@@ -47,9 +46,18 @@ async def startup():
     logger.info("Tongli PM Prediction System ready.")
 
 
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "Tongli PM API is running"}
+
+
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "service": "Tongli PM Prediction API", "version": "1.0.0"}
+    return {
+        "status": "ok",
+        "service": "Tongli PM Prediction API",
+        "version": "1.0.0"
+    }
 
 
 if __name__ == "__main__":
